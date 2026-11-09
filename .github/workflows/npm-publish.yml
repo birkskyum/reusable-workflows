@@ -32,6 +32,18 @@ on:
         type: string
         default: ''
         description: The folder in github pages to publish the docs to
+      branch:
+        type: string
+        default: main
+        description: The branch to release from, use this to release patches of an older major version from a maintenance branch
+      npm-tag:
+        type: string
+        default: ''
+        description: The npm tag to publish regular releases under, set it when releasing from a maintenance branch so `latest` is not moved
+      publish-docs:
+        type: boolean
+        default: true
+        description: Whether to build and publish the docs to github pages
 
 jobs:
   release-check:
@@ -44,7 +56,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          ref: main
+          ref: ${{ inputs.branch }}
 
       - name: Use Node.js from nvmrc
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -71,7 +83,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          ref: main
+          ref: ${{ inputs.branch }}
           submodules: ${{ inputs.checkout-submodules }}
 
       - name: Use Node.js from nvmrc
@@ -90,7 +102,9 @@ jobs:
       - name: Publish NPM package (regular)
         if: ${{ !contains(steps.package-version.outputs.current-version, '-') }}
         working-directory: ${{ inputs.publish-base-dir }}
-        run: npm publish --access=public
+        env:
+          NPM_TAG: ${{ inputs.npm-tag }}
+        run: npm publish --access=public ${NPM_TAG:+--tag "$NPM_TAG"}
 
       - name: Publish NPM package (pre-release)
         if: ${{ contains(steps.package-version.outputs.current-version, '-') }}
@@ -103,6 +117,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           custom_tag: ${{ steps.package-version.outputs.current-version }}
+          release_branches: ${{ inputs.branch }}
 
       - name: Create Archive
         run: |
@@ -150,10 +165,11 @@ jobs:
           prerelease: ${{ contains(steps.package-version.outputs.current-version, '-') }}
 
       - name: Build the Docs
+        if: ${{ inputs.publish-docs }}
         run: ${{ inputs.docs-command }}
 
       - name: Publish the docs
-        if: ${{ !contains(steps.package-version.outputs.current-version, '-') }}
+        if: ${{ inputs.publish-docs && !contains(steps.package-version.outputs.current-version, '-') }}
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

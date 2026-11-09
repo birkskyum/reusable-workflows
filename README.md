@@ -20,6 +20,8 @@ If so, it starts by:
 5. Building the docs.
 6. Publishing the docs to GitHub pages.
 
+It releases from `main` by default. To release patches of an older major version from a maintenance branch, call it from that branch with `branch` set to the branch name, `npm-tag` set to an npm tag other than `latest` so that `latest` stays on the newest version, and `publish-docs` set to `false`.
+
 ## lint-pr-title.yml
 
 This action checks that the PR title follows [Conventional Commits](https://www.conventionalcommits.org/) (a type such as `feat:` or `fix:`, then the description), using [action-semantic-pull-request](https://github.com/amannn/action-semantic-pull-request) with its defaults. It skips PRs opened by `github-actions[bot]`, like the one `create-bump-version-pr.yml` opens.
